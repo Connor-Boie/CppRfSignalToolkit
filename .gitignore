@@ -1,0 +1,10 @@
+/build/
+/cmake-build-*/
+/AGENTS.md
+
+.cache/
+compile_commands.json
+
+*.user
+*.swp
+*~
