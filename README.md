@@ -2,8 +2,16 @@
 
 CppRfSignalToolkit is a C++ application for processing and analyzing recorded
 radio-frequency (RF) complex in-phase and quadrature (I/Q) samples. The project
-is currently in its foundation phase; signal ingestion and digital signal
-processing features will be added incrementally.
+is currently beginning its data-ingestion phase; file readers and digital
+signal-processing features will be added incrementally.
+
+## Architecture
+
+Processing code represents an I/Q sample as a single-precision complex value.
+The real component stores the in-phase value, and the imaginary component stores
+the quadrature value. Future file readers will convert integer and floating-point
+recording formats into this common representation so that DSP components do not
+depend on a recording's storage encoding.
 
 ## Prerequisites
 

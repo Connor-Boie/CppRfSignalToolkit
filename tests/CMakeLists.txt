@@ -10,8 +10,18 @@ if(NOT GTest_FOUND)
     FetchContent_MakeAvailable(googletest)
 endif()
 
-add_executable(cpp_rf_signal_toolkit_tests main_test.cpp)
-target_link_libraries(cpp_rf_signal_toolkit_tests PRIVATE GTest::gtest_main)
+add_executable(
+    cpp_rf_signal_toolkit_tests
+    iq_sample_test.cpp
+    main_test.cpp
+)
+
+target_link_libraries(
+    cpp_rf_signal_toolkit_tests
+    PRIVATE
+        CppRfSignalToolkit::core
+        GTest::gtest_main
+)
 
 include(GoogleTest)
 gtest_discover_tests(cpp_rf_signal_toolkit_tests)
