@@ -14,6 +14,7 @@ add_executable(
     cpp_rf_signal_toolkit_tests
     iq_sample_test.cpp
     main_test.cpp
+    raw_iq_reader_test.cpp
 )
 
 target_link_libraries(
