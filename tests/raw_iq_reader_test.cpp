@@ -23,10 +23,26 @@ void append_int16_little_endian(std::vector<unsigned char>& bytes, std::int16_t 
     bytes.push_back(static_cast<unsigned char>((bits >> 8U) & 0x00FFU));
 }
 
+void append_int16_big_endian(std::vector<unsigned char>& bytes, std::int16_t value)
+{
+    const auto bits = std::bit_cast<std::uint16_t>(value);
+    bytes.push_back(static_cast<unsigned char>((bits >> 8U) & 0x00FFU));
+    bytes.push_back(static_cast<unsigned char>(bits & 0x00FFU));
+}
+
 void append_sample(std::vector<unsigned char>& bytes, std::int16_t in_phase, std::int16_t quadrature)
 {
     append_int16_little_endian(bytes, in_phase);
     append_int16_little_endian(bytes, quadrature);
+}
+
+void append_big_endian_sample(
+    std::vector<unsigned char>& bytes,
+    std::int16_t in_phase,
+    std::int16_t quadrature)
+{
+    append_int16_big_endian(bytes, in_phase);
+    append_int16_big_endian(bytes, quadrature);
 }
 
 class TemporaryBinaryFile
@@ -90,6 +106,51 @@ TEST(RawIqReaderTest, NormalizesSignedInt16Extrema)
     ASSERT_EQ(reader.read_samples(samples), 1U);
     EXPECT_FLOAT_EQ(samples[0].real(), -1.0F);
     EXPECT_FLOAT_EQ(samples[0].imag(), 32767.0F / 32768.0F);
+}
+
+TEST(RawIqReaderTest, DecodesBigEndianInterleavedComponents)
+{
+    std::vector<unsigned char> bytes;
+    append_big_endian_sample(bytes, 16384, -8192);
+    const TemporaryBinaryFile file{"cpp_rf_signal_toolkit_big_endian_components.iq", bytes};
+    RawIqReader reader{file.path(), RawIqFormat::signed_int16_big_endian};
+    std::array<IqSample, 1> samples{};
+
+    ASSERT_EQ(reader.read_samples(samples), 1U);
+    EXPECT_FLOAT_EQ(samples[0].real(), 0.5F);
+    EXPECT_FLOAT_EQ(samples[0].imag(), -0.25F);
+}
+
+TEST(RawIqReaderTest, NormalizesBigEndianSignedInt16Extrema)
+{
+    std::vector<unsigned char> bytes;
+    append_big_endian_sample(bytes, -32768, 32767);
+    const TemporaryBinaryFile file{"cpp_rf_signal_toolkit_big_endian_extrema.iq", bytes};
+    RawIqReader reader{file.path(), RawIqFormat::signed_int16_big_endian};
+    std::array<IqSample, 1> samples{};
+
+    ASSERT_EQ(reader.read_samples(samples), 1U);
+    EXPECT_FLOAT_EQ(samples[0].real(), -1.0F);
+    EXPECT_FLOAT_EQ(samples[0].imag(), 32767.0F / 32768.0F);
+}
+
+TEST(RawIqReaderTest, StreamsBigEndianSamplesAcrossCallerOwnedBuffers)
+{
+    std::vector<unsigned char> bytes;
+    append_big_endian_sample(bytes, 3276, -3276);
+    append_big_endian_sample(bytes, 6553, -6553);
+    append_big_endian_sample(bytes, 9830, -9830);
+    const TemporaryBinaryFile file{"cpp_rf_signal_toolkit_big_endian_streaming.iq", bytes};
+    RawIqReader reader{file.path(), RawIqFormat::signed_int16_big_endian};
+    std::array<IqSample, 2> samples{};
+
+    ASSERT_EQ(reader.read_samples(samples), 2U);
+    EXPECT_FLOAT_EQ(samples[0].real(), 3276.0F / 32768.0F);
+    EXPECT_FLOAT_EQ(samples[1].real(), 6553.0F / 32768.0F);
+
+    ASSERT_EQ(reader.read_samples(samples), 1U);
+    EXPECT_FLOAT_EQ(samples[0].real(), 9830.0F / 32768.0F);
+    EXPECT_EQ(reader.read_samples(samples), 0U);
 }
 
 TEST(RawIqReaderTest, StreamsAcrossCallerOwnedBuffers)

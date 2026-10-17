@@ -22,12 +22,34 @@ std::int16_t decode_int16_little_endian(const char* bytes)
     return std::bit_cast<std::int16_t>(bits);
 }
 
+std::int16_t decode_int16_big_endian(const char* bytes)
+{
+    const auto high_byte = static_cast<std::uint16_t>(static_cast<unsigned char>(bytes[0]));
+    const auto low_byte = static_cast<std::uint16_t>(static_cast<unsigned char>(bytes[1]));
+    const auto bits = static_cast<std::uint16_t>((high_byte << 8U) | low_byte);
+    return std::bit_cast<std::int16_t>(bits);
+}
+
+std::int16_t decode_int16(const char* bytes, RawIqFormat format)
+{
+    switch (format)
+    {
+    case RawIqFormat::signed_int16_little_endian:
+        return decode_int16_little_endian(bytes);
+    case RawIqFormat::signed_int16_big_endian:
+        return decode_int16_big_endian(bytes);
+    }
+
+    throw std::invalid_argument{"Unsupported raw I/Q format"};
+}
+
 }  // namespace
 
 RawIqReader::RawIqReader(const std::filesystem::path& path, RawIqFormat format)
-    : path_{path}, input_{path, std::ios::binary}
+    : path_{path}, format_{format}, input_{path, std::ios::binary}
 {
-    if (format != RawIqFormat::signed_int16_little_endian)
+    if (format_ != RawIqFormat::signed_int16_little_endian &&
+        format_ != RawIqFormat::signed_int16_big_endian)
     {
         throw std::invalid_argument{"Unsupported raw I/Q format"};
     }
@@ -70,9 +92,9 @@ std::size_t RawIqReader::read_samples(std::span<IqSample> output)
     for (std::size_t sample_index = 0; sample_index < samples_read; ++sample_index)
     {
         const auto byte_index = sample_index * bytes_per_sample;
-        const auto in_phase = decode_int16_little_endian(byte_buffer_.data() + byte_index);
-        const auto quadrature =
-            decode_int16_little_endian(byte_buffer_.data() + byte_index + bytes_per_component);
+        const auto in_phase = decode_int16(byte_buffer_.data() + byte_index, format_);
+        const auto quadrature = decode_int16(
+            byte_buffer_.data() + byte_index + bytes_per_component, format_);
 
         output[sample_index] = {
             static_cast<float>(in_phase) / int16_scale,

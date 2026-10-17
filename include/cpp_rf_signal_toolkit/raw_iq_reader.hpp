@@ -13,6 +13,7 @@ namespace cpp_rf_signal_toolkit {
 enum class RawIqFormat
 {
     signed_int16_little_endian,
+    signed_int16_big_endian,
 };
 
 class RawIqReader
@@ -24,6 +25,7 @@ public:
 
 private:
     std::filesystem::path path_;
+    RawIqFormat format_;
     std::ifstream input_;
     std::vector<char> byte_buffer_;
 };
