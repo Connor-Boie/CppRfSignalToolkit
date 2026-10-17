@@ -14,6 +14,7 @@ enum class RawIqFormat
 {
     signed_int16_little_endian,
     signed_int16_big_endian,
+    float32_little_endian,
 };
 
 class RawIqReader
